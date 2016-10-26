@@ -39,3 +39,5 @@ bower_components/
 # binaries
 api
 
+# configurations
+.borg.conf.json

@@ -86,17 +86,11 @@ func initWithConfFile() {
 	}
 }
 
-func initLogger() {
-	logger, _ := log.LoggerFromConfigAsString(conf.Seelog)
-	log.ReplaceLogger(logger)
-}
-
 func init() {
 	// read config file before if it exists, so we can replaces the var that was set with the cmdline
 	// the cmdline is allowed to overwrite the config file.
 	initWithConfFile()
 	flag.Parse()
-	initLogger()
 
 	cl, err := elastic.NewClient(elastic.SetSniff(false), elastic.SetURL(fmt.Sprintf("http://%v", *esAddr)))
 	if err != nil {

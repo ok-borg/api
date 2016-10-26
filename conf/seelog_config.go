@@ -1,6 +1,13 @@
 package conf
 
-const Seelog = `
+import log "github.com/cihub/seelog"
+
+func init() {
+	logger, _ := log.LoggerFromConfigAsString(seelogConf)
+	log.ReplaceLogger(logger)
+}
+
+const seelogConf = `
 <seelog>
   <outputs>
     <console formatid="colored"/>
