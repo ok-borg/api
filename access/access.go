@@ -68,10 +68,9 @@ func Control(handler func(ctx context.Context, w http.ResponseWriter, r *http.Re
 				if ac.Create >= maxCreate {
 					writeResponse(w, http.StatusUnauthorized, "borg-api: api max create reached")
 					return
-				} else {
-					ac.Create += 1
-					accessControl[token] = ac
 				}
+				ac.Create += 1
+				accessControl[token] = ac
 			}
 		}
 		if ctrl == Update {
@@ -82,10 +81,9 @@ func Control(handler func(ctx context.Context, w http.ResponseWriter, r *http.Re
 				if ac.Create >= maxUpdate {
 					writeResponse(w, http.StatusUnauthorized, "borg-api: api max update reached")
 					return
-				} else {
-					ac.Create += 1
-					accessControl[token] = ac
 				}
+				ac.Create += 1
+				accessControl[token] = ac
 			}
 		}
 		// just log some shit

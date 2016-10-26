@@ -19,9 +19,9 @@ func (e Endpoints) CreateOrganization(
 	organizationDao := domain.NewOrganizationDao(db)
 	// first check if organization with same name exists
 	if _, err := organizationDao.GetByName(name); err == nil {
-		// no error, we sucessfully get an organization,
+		// no error, we successfully get an organization,
 		// return an error
-		return nil, errors.New(fmt.Sprintf("An organization with the name %s already exists", name))
+		return nil, fmt.Errorf("An organization with the name %s already exists", name)
 	}
 
 	// first create organization
@@ -72,14 +72,14 @@ func (e Endpoints) CreateOrganizationJoinLink(
 	userOrganizationDao := domain.NewUserOrganizationDao(db)
 	userOrganization, err := userOrganizationDao.GetByUserAndOrganization(userId, organizationId)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf(
+		return nil, fmt.Errorf(
 			"user (id=%s) is not member of the organization (id=%s)",
-			userId, organizationId))
+			userId, organizationId)
 	}
 	if userOrganization.IsAdmin != 1 {
-		return nil, errors.New(fmt.Sprintf(
+		return nil, fmt.Errorf(
 			"user (id=%s) is not administrator of organization (id=%s)",
-			userId, organizationId))
+			userId, organizationId)
 	}
 
 	// ok so here the organization exists, the user is the admin
@@ -115,22 +115,22 @@ func (e Endpoints) DeleteOrganizationJoinLink(
 	organizationJoinLinkDao := domain.NewOrganizationJoinLinkDao(db)
 	ojl, err := organizationJoinLinkDao.GetById(organizationJoinLinkId)
 	if err != nil {
-		return errors.New(fmt.Sprintf("cannot fin organization join link (id=%s)",
-			organizationJoinLinkId))
+		return fmt.Errorf("cannot fin organization join link (id=%s)",
+			organizationJoinLinkId)
 	}
 
 	// then get UserOrganization to check if the user is admin or not
 	userOrganizationDao := domain.NewUserOrganizationDao(db)
 	userOrganization, err := userOrganizationDao.GetByUserAndOrganization(userId, ojl.OrganizationId)
 	if err != nil {
-		return errors.New(fmt.Sprintf(
+		return fmt.Errorf(
 			"user (id=%s) is not member of the organization (id=%s)",
-			userId, ojl.OrganizationId))
+			userId, ojl.OrganizationId)
 	}
 	if userOrganization.IsAdmin != 1 {
-		return errors.New(fmt.Sprintf(
+		return fmt.Errorf(
 			"user (id=%s) is not administrator of organization (id=%s)",
-			userId, ojl.OrganizationId))
+			userId, ojl.OrganizationId)
 	}
 
 	// ok so here the organization exists, the user is the admin
@@ -163,14 +163,14 @@ func (e Endpoints) GetOrganizationJoinLinkForOrganization(
 	userOrganizationDao := domain.NewUserOrganizationDao(db)
 	userOrganization, err := userOrganizationDao.GetByUserAndOrganization(userId, organizationJoinLink.OrganizationId)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf(
+		return nil, fmt.Errorf(
 			"user (id=%s) is not member of the organization (id=%s)",
-			userId, organizationJoinLink.OrganizationId))
+			userId, organizationJoinLink.OrganizationId)
 	}
 	if userOrganization.IsAdmin != 1 {
-		return nil, errors.New(fmt.Sprintf(
+		return nil, fmt.Errorf(
 			"user (id=%s) is not administrator of organization (id=%s)",
-			userId, organizationJoinLink.OrganizationId))
+			userId, organizationJoinLink.OrganizationId)
 	}
 
 	return &organizationJoinLink, err
@@ -194,8 +194,8 @@ func (e Endpoints) JoinOrganization(
 	organizationJoinLinkDao := domain.NewOrganizationJoinLinkDao(db)
 	ojl, err := organizationJoinLinkDao.GetById(organizationJoinLinkId)
 	if err != nil {
-		return errors.New(fmt.Sprintf("cannot fin organization join link (id=%s)",
-			organizationJoinLinkId))
+		return fmt.Errorf("cannot fin organization join link (id=%s)",
+			organizationJoinLinkId)
 	}
 
 	// if not expired continue
@@ -231,7 +231,7 @@ func (e Endpoints) LeaveOrganization(
 	userOrganizationDao := domain.NewUserOrganizationDao(db)
 	if userOrganization, err := userOrganizationDao.GetByUserAndOrganization(userId, organizationId); err != nil {
 		// user is not part of this organization
-		return errors.New(fmt.Sprintf("[Endpoints.LeaveOrganization] User (id=%s), is not part of organization (id=%s)", userId, organizationId))
+		return fmt.Errorf("[Endpoints.LeaveOrganization] User (id=%s), is not part of organization (id=%s)", userId, organizationId)
 	} else {
 		if userOrganization.IsAdmin == 1 {
 			admins, _ := userOrganizationDao.GetAdmins(organizationId)
@@ -242,8 +242,8 @@ func (e Endpoints) LeaveOrganization(
 				if len(users) != 1 {
 					// you are not the last user, you cannot leave this shit
 					// lets transfer ownership before
-					return errors.New(fmt.Sprintf("[Endpoints.LeaveOrganization] User (id=%s), is the last admin for the organization, he can leave only if there is 1 member in the organization (id=%s)",
-						userId, organizationId))
+					return fmt.Errorf("[Endpoints.LeaveOrganization] User (id=%s), is the last admin for the organization, he can leave only if there is 1 member in the organization (id=%s)",
+						userId, organizationId)
 				}
 			}
 		}
@@ -261,20 +261,20 @@ func (e Endpoints) ExpelUserFromOrganization(
 	userOrganizationDao := domain.NewUserOrganizationDao(db)
 	adminOjl, err := userOrganizationDao.GetByUserAndOrganization(userId, organizationId)
 	if err != nil {
-		return errors.New(fmt.Sprintf(
+		return fmt.Errorf(
 			"user (id=%s) is not member of the organization (id=%s)",
-			userId, organizationId))
+			userId, organizationId)
 	}
 	if adminOjl.IsAdmin != 1 {
-		return errors.New(fmt.Sprintf(
+		return fmt.Errorf(
 			"user (id=%s) is not administrator of organization (id=%s)",
-			userId, organizationId))
+			userId, organizationId)
 	}
 
 	// then just remove the user organization assorciation
 	userOrganization, err := userOrganizationDao.GetByUserAndOrganization(userIdToExpel, organizationId)
 	if err != nil {
-		return errors.New(fmt.Sprintf("[Endpoints.ExpelUserFromOrganization] user (id=%s) is not part of organization (id=%s)", userIdToExpel, organizationId))
+		return fmt.Errorf("[Endpoints.ExpelUserFromOrganization] user (id=%s) is not part of organization (id=%s)", userIdToExpel, organizationId)
 	}
 
 	return userOrganizationDao.Delete(userOrganization.Id)
@@ -303,7 +303,7 @@ func (e Endpoints) GrantAdminRightToUser(
 	// then just get  the user organization assorciation and update it
 	userOrganization, err := userOrganizationDao.GetByUserAndOrganization(userIdToAdmin, organizationId)
 	if err != nil {
-		return errors.New(fmt.Sprintf("[Endpoints.ExpelUserFromOrganization] user (id=%s) is not part of organization (id=%s)", userIdToAdmin, organizationId))
+		return fmt.Errorf("[Endpoints.ExpelUserFromOrganization] user (id=%s) is not part of organization (id=%s)", userIdToAdmin, organizationId)
 	}
 	userOrganization.IsAdmin = 1
 	return userOrganizationDao.Update(userOrganization)

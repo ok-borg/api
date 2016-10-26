@@ -388,13 +388,14 @@ func createOrganization(
 
 	u, _ := ctxext.User(ctx)
 	// lets create an org
-	if o, err := ep.CreateOrganization(db, u.Id, expectedBody.Name); err != nil {
+	o, err := ep.CreateOrganization(db, u.Id, expectedBody.Name)
+	if err != nil {
 		writeResponse(w, http.StatusInternalServerError,
 			"borg-api: create organization error: "+err.Error())
 		return
-	} else {
-		writeJsonResponse(w, http.StatusOK, o)
 	}
+
+	writeJsonResponse(w, http.StatusOK, o)
 }
 
 // create a new organization join link.
@@ -426,13 +427,14 @@ func createOrganizationJoinLink(
 
 	u, _ := ctxext.User(ctx)
 	// ceate the organizartion Join Link
-	if o, err := ep.CreateOrganizationJoinLink(db, u.Id, expectedBody.OrganizationId, expectedBody.Ttl); err != nil {
+	o, err := ep.CreateOrganizationJoinLink(db, u.Id, expectedBody.OrganizationId, expectedBody.Ttl)
+	if err != nil {
 		writeResponse(w, http.StatusInternalServerError,
 			"borg-api: create organization join link error: "+err.Error())
 		return
-	} else {
-		writeJsonResponse(w, http.StatusOK, o)
 	}
+
+	writeJsonResponse(w, http.StatusOK, o)
 }
 
 // delete an existing link
@@ -475,13 +477,14 @@ func getOrganizationJoinLink(
 
 	// get the organization join link
 	// no need of user id or anythin
-	if ojl, err := ep.GetOrganizationJoinLink(db, id); err != nil {
+	ojl, err := ep.GetOrganizationJoinLink(db, id)
+	if err != nil {
 		writeResponse(w, http.StatusInternalServerError,
 			"borg-api: get organization join link error: "+err.Error())
 		return
-	} else {
-		writeJsonResponse(w, http.StatusOK, ojl)
 	}
+
+	writeJsonResponse(w, http.StatusOK, ojl)
 }
 
 // get join link for a given organization
@@ -499,13 +502,14 @@ func getOrganizationJoinLinkByOrganizationId(
 
 	u, _ := ctxext.User(ctx)
 	// ceate the organizartion Join Link
-	if ojl, err := ep.GetOrganizationJoinLinkForOrganization(db, u.Id, id); err != nil {
+	ojl, err := ep.GetOrganizationJoinLinkForOrganization(db, u.Id, id)
+	if err != nil {
 		writeResponse(w, http.StatusInternalServerError,
 			"borg-api: get organization join link error: "+err.Error())
 		return
-	} else {
-		writeJsonResponse(w, http.StatusOK, ojl)
 	}
+
+	writeJsonResponse(w, http.StatusOK, ojl)
 }
 
 // join an organization.
@@ -527,9 +531,9 @@ func joinOrganization(
 		writeResponse(w, http.StatusInternalServerError,
 			"borg-api: cannot join organization: "+err.Error())
 		return
-	} else {
-		writeJsonResponse(w, http.StatusOK, "")
 	}
+
+	writeJsonResponse(w, http.StatusNoContent, "")
 }
 
 // list user organization
@@ -540,13 +544,14 @@ func listUserOrganizations(
 	p httpr.Params) {
 	u, _ := ctxext.User(ctx)
 	// ceate the organizartion Join Link
-	if orgz, err := ep.ListUserOrganizations(db, u.Id); err != nil {
+	orgz, err := ep.ListUserOrganizations(db, u.Id)
+	if err != nil {
 		writeResponse(w, http.StatusInternalServerError,
 			"borg-api: list user organizations error: "+err.Error())
 		return
-	} else {
-		writeJsonResponse(w, http.StatusOK, orgz)
 	}
+
+	writeJsonResponse(w, http.StatusOK, orgz)
 }
 
 // leave an organization,
@@ -569,9 +574,9 @@ func leaveOrganization(
 		writeResponse(w, http.StatusInternalServerError,
 			"borg-api: cannot leave organization: "+err.Error())
 		return
-	} else {
-		writeJsonResponse(w, http.StatusNoContent, "")
 	}
+
+	writeJsonResponse(w, http.StatusNoContent, "")
 }
 
 // expel an user from an organization,
@@ -600,9 +605,9 @@ func expelUserFromOrganization(
 		writeResponse(w, http.StatusInternalServerError,
 			"borg-api: cannot expel from organization: "+err.Error())
 		return
-	} else {
-		writeJsonResponse(w, http.StatusNoContent, "")
 	}
+
+	writeJsonResponse(w, http.StatusNoContent, "")
 }
 
 func grantAdminRightToUser(
@@ -628,10 +633,9 @@ func grantAdminRightToUser(
 		writeResponse(w, http.StatusInternalServerError,
 			"borg-api: cannot expel from organization: "+err.Error())
 		return
-	} else {
-		writeJsonResponse(w, http.StatusNoContent, "")
 	}
 
+	writeJsonResponse(w, http.StatusNoContent, "")
 }
 
 func slackCommand(w http.ResponseWriter, r *http.Request, p httpr.Params) {
@@ -639,10 +643,11 @@ func slackCommand(w http.ResponseWriter, r *http.Request, p httpr.Params) {
 		writeResponse(w, http.StatusInternalServerError, "Something wrong happened, please try again later.")
 		return
 	}
-	if res, err := ep.Slack(r.FormValue("text")); err != nil {
+	res, err := ep.Slack(r.FormValue("text"))
+	if err != nil {
 		writeResponse(w, http.StatusInternalServerError, "Something wrong happened, please try again later.")
 		return
-	} else {
-		writeResponse(w, http.StatusOK, res)
 	}
+
+	writeResponse(w, http.StatusOK, res)
 }

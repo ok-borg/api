@@ -142,7 +142,7 @@ func (e *Endpoints) GetUser(token string) (*domain.User, error) {
 	tokenDao := domain.NewAccessTokenDao(e.db)
 	t, err := tokenDao.GetByToken(token)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("token (%s) is associated to no users", token))
+		return nil, fmt.Errorf("token (%s) is associated to no users", token)
 	}
 	userDao := domain.NewUserDao(e.db)
 	u, _ := userDao.GetById(t.UserId)
