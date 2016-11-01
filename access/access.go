@@ -1,6 +1,7 @@
 package access
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -11,7 +12,6 @@ import (
 	httpr "github.com/julienschmidt/httprouter"
 	"github.com/ok-borg/api/ctxext"
 	"github.com/ok-borg/api/domain"
-	"golang.org/x/net/context"
 )
 
 type AccessKinds int

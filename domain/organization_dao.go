@@ -30,6 +30,16 @@ func (od *OrganizationDao) GetByName(name string) (Organization, error) {
 	return u, err
 }
 
+func (od *OrganizationDao) MatchesInIds(
+	ids []string, pattern string,
+) ([]Organization, error) {
+	u := []Organization{}
+	err := od.db.Where("organizations.id in (?)", ids).
+		Where("organizations.name LIKE ?", pattern+"%").
+		Find(&u).Error
+	return u, err
+}
+
 func (od *OrganizationDao) Create(u Organization) error {
 	return od.db.Create(&u).Error
 }
