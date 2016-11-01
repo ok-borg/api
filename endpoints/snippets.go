@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	PublicBorgSnippet = "BORG"
+	PublicBorgSnippet = "borg"
 )
 
 // GetSnippet by id
