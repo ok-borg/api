@@ -73,13 +73,31 @@ func q(w http.ResponseWriter, r *http.Request, p httpr.Params) {
 	fmt.Fprint(w, string(bs))
 }
 
-func getLatestSnippets(w http.ResponseWriter, r *http.Request, p httpr.Params) {
-	id := p.ByName("owner")
-	if len(id) == 0 {
+func getLatestSnippets(
+	ctx context.Context, w http.ResponseWriter, r *http.Request, p httpr.Params) {
+	owner := p.ByName("owner")
+	if len(owner) == 0 {
 		common.WriteResponse(w, http.StatusBadRequest, "borg-api: Missing owner url parameter")
 		return
 	}
-	res, err := ep.GetLatestSnippets()
+
+	// this is a maybeAuth endpoint, so first check if the guys is auth
+	// if not use "borg", else try to figure out if it is a private thing
+	var index string
+	if isAuth, _ := ctxext.IsAuth(ctx); isAuth {
+		var err error
+		userId, _ := ctxext.UserId(ctx)
+		index, err = getRealOwner(owner, userId)
+		if err != nil {
+			common.WriteResponse(w, http.StatusBadRequest, fmt.Sprintf("borg-api: %s", err.Error()))
+			return
+		}
+	} else {
+		// by default if not auth index is the public one
+		index = endpoints.PublicBorgSnippet
+	}
+
+	res, err := ep.GetLatestSnippets(index)
 	if err != nil {
 		common.WriteResponse(w, http.StatusInternalServerError, err.Error())
 	}
@@ -102,13 +120,17 @@ func createSnippet(ctx context.Context, w http.ResponseWriter, r *http.Request, 
 	}{}
 
 	if err := json.Unmarshal(body, &s); err != nil {
-		log.Errorf("Invalid snippet, %s, input was %s", err.Error(), string(body))
+		log.Errorf("[createSnippet] Invalid snippet, %s, input was %s", err.Error(), string(body))
 		common.WriteResponse(w, http.StatusBadRequest, "borg-api: Invalid snippet")
 		return
 	}
 
-	userId, err := ctxext.UserId(ctx)
+	userId, _ := ctxext.UserId(ctx)
 	index, err := getRealOwner(s.Owner, userId)
+	if err != nil {
+		common.WriteResponse(w, http.StatusBadRequest, fmt.Sprintf("borg-api: %s", err.Error()))
+		return
+	}
 	err = ep.CreateSnippet(&s.Snippet, index, userId)
 	if err != nil {
 		common.WriteResponse(w, http.StatusInternalServerError, "borg-api: unable to unmarshal snippet")
@@ -123,13 +145,26 @@ func updateSnippet(ctx context.Context, w http.ResponseWriter, r *http.Request, 
 		common.WriteResponse(w, http.StatusInternalServerError, "borg-api: unable to read body")
 		return
 	}
-	var snipp types.Problem
-	if err := json.Unmarshal(body, &snipp); err != nil {
-		log.Errorf("[updateSnippet] invalid snippet, %s, input was %s", err.Error(), string(body))
+
+	s := struct {
+		Snippet types.Problem
+		Owner   string
+	}{}
+
+	if err := json.Unmarshal(body, &s); err != nil {
+		log.Errorf("[updateSnippet] Invalid snippet, %s, input was %s", err.Error(), string(body))
 		common.WriteResponse(w, http.StatusBadRequest, "borg-api: Invalid snippet")
 		return
 	}
-	err = ep.UpdateSnippet(&snipp, "", ctx.Value("userId").(string))
+
+	userId, _ := ctxext.UserId(ctx)
+	index, err := getRealOwner(s.Owner, userId)
+	if err != nil {
+		common.WriteResponse(w, http.StatusBadRequest, fmt.Sprintf("borg-api: %s", err.Error()))
+		return
+	}
+
+	err = ep.UpdateSnippet(&s.Snippet, index, ctx.Value("userId").(string))
 	if err != nil {
 		common.WriteResponse(w, http.StatusInternalServerError, "borg-api: error")
 		return
@@ -160,13 +195,36 @@ func snippetWorked(ctx context.Context, w http.ResponseWriter, r *http.Request, 
 	common.WriteResponse(w, http.StatusOK, "{}")
 }
 
-func getSnippet(w http.ResponseWriter, r *http.Request, p httpr.Params) {
+func getSnippet(
+	ctx context.Context, w http.ResponseWriter, r *http.Request, p httpr.Params) {
 	id := p.ByName("id")
 	if len(id) == 0 {
 		common.WriteResponse(w, http.StatusBadRequest, "borg-api: Missing id url parameter")
 		return
 	}
-	snipp, err := ep.GetSnippet(id)
+	owner := p.ByName("owner")
+	if len(owner) == 0 {
+		common.WriteResponse(w, http.StatusBadRequest, "borg-api: Missing owner url parameter")
+		return
+	}
+
+	// this is a maybeAuth endpoint, so first check if the guys is auth
+	// if not use "borg", else try to figure out if it is a private thing
+	var index string
+	if isAuth, _ := ctxext.IsAuth(ctx); isAuth {
+		var err error
+		userId, _ := ctxext.UserId(ctx)
+		index, err = getRealOwner(owner, userId)
+		if err != nil {
+			common.WriteResponse(w, http.StatusBadRequest, fmt.Sprintf("borg-api: %s", err.Error()))
+			return
+		}
+	} else {
+		// by default if not auth index is the public one
+		index = endpoints.PublicBorgSnippet
+	}
+
+	snipp, err := ep.GetSnippet(index, id)
 	if err != nil {
 		common.WriteResponse(w, http.StatusInternalServerError, "borg-api: Failed to get snippet")
 		return

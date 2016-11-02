@@ -35,11 +35,11 @@ func Init(
 	r.GET("/v2/query", q)
 
 	// authenticated endpoints
-	r.GET("/v2/user", access.IfAuth(db, common.GetUser))
+	r.GET("/v2/user", access.MaybeAuth(db, common.GetUser))
 
 	// snippets
-	r.GET("/v2/p/:id", getSnippet)
-	r.GET("/v2/latest/:owner", getLatestSnippets)
+	r.GET("/v2/p/:id/:owner", access.MaybeAuth(db, getSnippet))
+	r.GET("/v2/latest/:owner", access.IfAuth(db, getLatestSnippets))
 	r.POST("/v2/p", access.IfAuth(db, access.Control(createSnippet, access.Create)))
 	//r.DELETE("/v2/p/:id", access.IfAuth(deleteSnippet))
 	r.PUT("/v2/p", access.IfAuth(db, access.Control(updateSnippet, access.Update)))
