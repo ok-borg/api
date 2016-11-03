@@ -1,6 +1,7 @@
 package access
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -11,7 +12,6 @@ import (
 	httpr "github.com/julienschmidt/httprouter"
 	"github.com/ok-borg/api/ctxext"
 	"github.com/ok-borg/api/domain"
-	"golang.org/x/net/context"
 )
 
 type AccessKinds int
@@ -126,7 +126,47 @@ func IfAuth(db *gorm.DB, handler func(ctx context.Context, w http.ResponseWriter
 		ctx := ctxext.WithTokenString(context.Background(), token)
 		ctx = ctxext.WithUserId(ctx, user.Id)
 		ctx = ctxext.WithUser(ctx, user)
+		ctx = ctxext.WithIsAuth(ctx, true)
 		handler(ctx, w, r, p)
+	}
+}
+
+// simple helper to check if the user is auth in the application,
+// if logged process the handler, or return directly
+func MaybeAuth(db *gorm.DB, handler func(ctx context.Context, w http.ResponseWriter, r *http.Request, p httpr.Params)) func(w http.ResponseWriter, r *http.Request, p httpr.Params) {
+	return func(w http.ResponseWriter, r *http.Request, p httpr.Params) {
+		var token string
+		if token = r.FormValue("token"); token == "" {
+			if token = r.Header.Get("Authorization"); token == "" {
+				if token = r.Header.Get("authorization"); token == "" {
+					// no token just add IsAuth value in the ctx and call the handler
+					ctx := ctxext.WithIsAuth(context.Background(), false)
+					handler(ctx, w, r, p)
+				}
+			}
+		}
+		if len(token) > 0 {
+			accessTokenDao := domain.NewAccessTokenDao(db)
+			at, err := accessTokenDao.GetByToken(token)
+			if err != nil {
+				writeResponse(w, http.StatusUnauthorized, "borg-api: Invalid access token")
+				return
+			}
+			// get or create it in mysql
+			userDao := domain.NewUserDao(db)
+			user, err := userDao.GetById(at.UserId)
+			if err != nil {
+				writeResponse(w, http.StatusUnauthorized, "borg-api: Invalid access token")
+				return
+			}
+
+			// no errors, process the handler
+			ctx := ctxext.WithTokenString(context.Background(), token)
+			ctx = ctxext.WithUserId(ctx, user.Id)
+			ctx = ctxext.WithUser(ctx, user)
+			ctx = ctxext.WithIsAuth(ctx, true)
+			handler(ctx, w, r, p)
+		}
 	}
 }
 

@@ -11,10 +11,14 @@ import (
 	"github.com/ventu-io/go-shortid"
 )
 
+const (
+	PublicBorgSnippet = "borg"
+)
+
 // GetSnippet by id
-func (e Endpoints) GetSnippet(id string) (*types.Problem, error) {
+func (e Endpoints) GetSnippet(index string, id string) (*types.Problem, error) {
 	res, err := e.client.Get().
-		Index("borg").
+		Index(index).
 		Type("problem").
 		Id(id).
 		Do()
@@ -30,9 +34,9 @@ func (e Endpoints) GetSnippet(id string) (*types.Problem, error) {
 }
 
 // GetLatestSnippets in reverse chronological order
-func (e *Endpoints) GetLatestSnippets() ([]types.Problem, error) {
+func (e *Endpoints) GetLatestSnippets(index string) ([]types.Problem, error) {
 	res, err := e.client.Search().
-		Index("borg").
+		Index(index).
 		Type("problem").
 		From(0).
 		Size(50).
@@ -52,7 +56,7 @@ func (e *Endpoints) GetLatestSnippets() ([]types.Problem, error) {
 }
 
 // CreateSnippet saves a snippet, generates id
-func (e Endpoints) CreateSnippet(snipp *types.Problem, userId string) error {
+func (e Endpoints) CreateSnippet(snipp *types.Problem, index string, userId string) error {
 	if snipp.Title == "" || len(snipp.Solutions) == 0 {
 		return errors.New("Title or solutions missing")
 	}
@@ -61,7 +65,7 @@ func (e Endpoints) CreateSnippet(snipp *types.Problem, userId string) error {
 	snipp.Created = time.Now()
 	log.Infof("Snippet with id %v is created by %v", snipp.Id, snipp.CreatedBy)
 	_, err := e.client.Index().
-		Index("borg").
+		Index(index).
 		Type("problem").
 		Id(snipp.Id).
 		BodyJson(snipp).
@@ -71,7 +75,7 @@ func (e Endpoints) CreateSnippet(snipp *types.Problem, userId string) error {
 }
 
 // UpdateSnippet saves a snippet
-func (e Endpoints) UpdateSnippet(snipp *types.Problem, userId string) error {
+func (e Endpoints) UpdateSnippet(snipp *types.Problem, index string, userId string) error {
 	if snipp.Id == "" {
 		return errors.New("No id found")
 	}
@@ -82,7 +86,7 @@ func (e Endpoints) UpdateSnippet(snipp *types.Problem, userId string) error {
 	snipp.LastUpdated = time.Now()
 	log.Infof("Snippet %v is being updated by %v", snipp.Id, snipp.LastUpdatedBy)
 	_, err := e.client.Index().
-		Index("borg").
+		Index(index).
 		Type("problem").
 		Id(snipp.Id).
 		BodyJson(snipp).
