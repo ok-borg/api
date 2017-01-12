@@ -11,7 +11,7 @@
     - name: copy borgd service
       copy: src=./borgd.service dest=/lib/systemd/system/borgd.service
     - name: copy binary
-      copy: src=../../daemon_linux_amd64 dest=/usr/bin/borgd
+      copy: src=../../api_linux_amd64 dest=/usr/bin/borgd
     - name: make sure borgd is executable
       shell: chmod 755 /usr/bin/borgd
     - name: reload systemd services
